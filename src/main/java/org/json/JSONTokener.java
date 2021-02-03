@@ -322,20 +322,10 @@ public class JSONTokener {
                 c = this.next();
                 switch (c) {
                 case 'b':
-                    sb.append('\b');
-                    break;
                 case 't':
-                    sb.append('\t');
-                    break;
                 case 'n':
-                    sb.append('\n');
-                    break;
                 case 'f':
-                    sb.append('\f');
-                    break;
                 case 'r':
-                    sb.append('\r');
-                    break;
                 case 'u':
                     try {
                         sb.append((char)Integer.parseInt(this.next(4), 16));

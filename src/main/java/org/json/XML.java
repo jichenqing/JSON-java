@@ -26,10 +26,12 @@ SOFTWARE.
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 
 
 /**
@@ -119,7 +121,7 @@ public class XML {
     /**
      * Replace special characters with XML escapes:
      *
-     * <pre>{@code 
+     * <pre>{@code
      * &amp; (ampersand) is replaced by &amp;amp;
      * &lt; (less than) is replaced by &amp;lt;
      * &gt; (greater than) is replaced by &amp;gt;
@@ -240,6 +242,399 @@ public class XML {
             }
         }
     }
+
+
+
+
+
+/***************************************************  BEGINNING OF NEW PARSE METHODS & HELPER EXCEPTION *****************************************************************************/
+
+    //To stop the parsing, this exception is thrown when token is a closing tag (tagName after a slash)
+    // and is equal to the last key (or item) of pointer.
+
+    public static class CloseTagFoundException extends Exception {
+        public CloseTagFoundException(String errorMessage) {
+            super(errorMessage);
+        }
+    }
+
+
+
+    /**
+     * Scan the content following the named tag, attaching it to the context.
+     *
+     * @param x
+     *            The XMLTokener containing the source string.
+     * @param context
+     *            The JSONObject that will include the new material.
+     * @param name
+     *            The tag name.
+     * @param key
+     *            The last key (or item) of the pointer
+     * @return true if the close tag is processed.
+     * @throws JSONException
+     * @throws CloseTagFoundException if the close tag is equal to key
+     */
+    private static Boolean parse2(XMLTokener x, JSONObject context, String name, String key, XMLParserConfiguration config)
+            throws JSONException, CloseTagFoundException {
+        char c;
+        int i;
+        JSONObject jsonObject = null;
+        String string;
+        String tagName;
+        Object token;
+        XMLXsiTypeConverter<?> xmlXsiTypeConverter;
+
+        // Test for and skip past these forms:
+        // <!-- ... -->
+        // <! ... >
+        // <![ ... ]]>
+        // <? ... ?>
+        // Report errors for these forms:
+        // <>
+        // <=
+        // <<
+
+        token = x.nextToken();
+//        System.out.println(token);
+
+        // <!
+        if (token ==GT) {
+            token = x.nextContent();
+            if(token==LT) {
+            token=x.nextToken();
+            }
+            else{
+                context.accumulate(key,token);
+                throw new CloseTagFoundException("");
+            }
+        }
+
+        if (token == BANG) {
+            c = x.next();
+            if (c == '-') {
+                if (x.next() == '-') {
+                    x.skipPast("-->");
+                    return false;
+                }
+                x.back();
+            } else if (c == '[') {
+                token = x.nextToken();
+                if ("CDATA".equals(token)) {
+                    if (x.next() == '[') {
+                        string = x.nextCDATA();
+                        if (string.length() > 0) {
+                            context.accumulate(config.getcDataTagName(), string);
+                        }
+                        return false;
+                    }
+                }
+                throw x.syntaxError("Expected 'CDATA['");
+            }
+            i = 1;
+            do {
+                token = x.nextMeta();
+                if (token == null) {
+                    throw x.syntaxError("Missing '>' after '<!'.");
+                } else if (token == LT) {
+                    i += 1;
+                } else if (token == GT) {
+                    i -= 1;
+                }
+            } while (i > 0);
+            return false;
+        } else if (token == QUEST) {
+
+            // <?
+            x.skipPast("?>");
+            return false;
+        } else if (token == SLASH) {
+
+            // Close tag </
+
+            token = x.nextToken();
+            if (name == null) {
+                throw x.syntaxError("Mismatched close tag " + token);
+            }
+            if (!token.equals(name)) {
+//                throw x.syntaxError("Mismatched " + name + " and " + token);
+            }
+            if (x.nextToken() != GT) {
+                throw x.syntaxError("Misshaped close tag");
+            }
+            if(token.equals(key)){
+                throw new CloseTagFoundException("catch you");
+            }
+            return true;
+
+        }
+
+//            throw x.syntaxError("Misshaped tag");
+
+            // Open tag <
+
+        else {
+            tagName = (String) token;
+            token = null;
+            jsonObject = new JSONObject();
+            boolean nilAttributeFound = false;
+            xmlXsiTypeConverter = null;
+            for (;;) {
+                if (token == null) {
+                    token = x.nextToken();
+                }
+
+                if (token == EQ) {
+                    token = x.nextToken();
+                    if (!(token instanceof String)) {
+                        throw x.syntaxError("Missing value");
+                    }
+
+                    if (config.isConvertNilAttributeToNull()
+                            && NULL_ATTR.equals(tagName)
+                            && Boolean.parseBoolean((String) token)) {
+                        nilAttributeFound = true;
+                    } else if(config.getXsiTypeMap() != null && !config.getXsiTypeMap().isEmpty()
+                            && TYPE_ATTR.equals(tagName)) {
+                        xmlXsiTypeConverter = config.getXsiTypeMap().get(token);
+                    } else if (!nilAttributeFound) {
+                        jsonObject.accumulate(tagName,
+                                config.isKeepStrings()
+                                        ? ((String) token)
+                                        : stringToValue((String) token));
+                    }
+                    token = null;
+                    return false;
+                }
+
+                // attribute = value
+                  if (token instanceof String) {
+                    string = (String) token;
+                    token = x.nextToken();
+                    if (token == EQ) {
+                        token = x.nextToken();
+                        if (!(token instanceof String)) {
+                            throw x.syntaxError("Missing value");
+                        }
+
+                        if (config.isConvertNilAttributeToNull()
+                                && NULL_ATTR.equals(string)
+                                && Boolean.parseBoolean((String) token)) {
+                            nilAttributeFound = true;
+                        } else if(config.getXsiTypeMap() != null && !config.getXsiTypeMap().isEmpty()
+                                && TYPE_ATTR.equals(string)) {
+                            xmlXsiTypeConverter = config.getXsiTypeMap().get(token);
+                        } else if (!nilAttributeFound) {
+                            jsonObject.accumulate(string,
+                                    config.isKeepStrings()
+                                            ? ((String) token)
+                                            : stringToValue((String) token));
+                        }
+                        token = null;
+                    } else {
+                        jsonObject.accumulate(string, "");
+                    }
+
+
+                } else if (token == SLASH) {
+                    // Empty tag <.../>
+                    if (x.nextToken() != GT) {
+                        throw x.syntaxError("Misshaped tag");
+                    }
+                    if (nilAttributeFound) {
+                        context.accumulate(tagName, JSONObject.NULL);
+                    } else if (jsonObject.length() > 0) {
+                        context.accumulate(tagName, jsonObject);
+                    } else {
+                        context.accumulate(tagName, "");
+                    }
+                    return false;
+
+                } else if (token == GT) {
+                    // Content, between <...> and </...>
+                    for (;;) {
+                        token = x.nextContent();
+
+                        if (token == null) {
+                            if (tagName != null) {
+                                throw x.syntaxError("Unclosed tag " + tagName);
+                            }
+                            return false;
+                        } else if (token instanceof String) {
+                            string = (String) token;
+                            if (string.length() > 0) {
+                                if(xmlXsiTypeConverter != null) {
+                                    jsonObject.accumulate(config.getcDataTagName(),
+                                            stringToValue(string, xmlXsiTypeConverter));
+                                } else {
+                                    jsonObject.accumulate(config.getcDataTagName(),
+                                            config.isKeepStrings() ? string : stringToValue(string));
+                                }
+                            }
+
+                        } else if (token == LT) {
+                            // Nested element
+                            if (parse2(x, jsonObject, tagName, key,config)) {
+                                if (jsonObject.length() == 0) {
+                                    context.accumulate(tagName, "");
+                                } else if (jsonObject.length() == 1
+                                        && jsonObject.opt(config.getcDataTagName()) != null) {
+                                    context.accumulate(tagName, jsonObject.opt(config.getcDataTagName()));
+                                } else {
+                                    context.accumulate(tagName, jsonObject);
+                                }
+                                return false;
+                            }
+                        }
+                    }
+                } else {
+                    throw x.syntaxError("Misshaped tag");
+                }
+            }
+        }
+    }
+
+
+    /**
+     * overloaded parse method
+     *
+     * @param x
+     *            The XMLTokener containing the source string.
+     * @param context
+     *            The JSONObject that will include the new material.
+     * @param name
+     *            The tag name.
+     * @param pointer
+     *            The pointer as a listIterator.
+     * @return context if the object queried by the pointer is found.
+     * @throws JSONException
+     */
+
+
+    private static JSONObject parse1(XMLTokener x, JSONObject context, String name, ListIterator<String> pointer, XMLParserConfiguration config)
+            throws JSONException {
+        char c;
+        int i;
+        JSONObject jsonObject = null;
+        String string;
+        String tagName;
+        Object token;
+        String key="";
+        XMLXsiTypeConverter<?> xmlXsiTypeConverter;
+        String last_key="";
+        // Test for and skip past these forms:
+        // <!-- ... -->
+        // <! ... >
+        // <![ ... ]]>
+        // <? ... ?>
+        // Report errors for these forms:
+        // <>
+        // <=
+        // <<
+
+        key= pointer.next();
+
+        token = x.nextToken();
+
+        if (token == BANG) {
+            c = x.next();
+            if (c == '-') {
+                if (x.next() == '-') {
+                    x.skipPast("-->");
+                    token = x.nextToken();
+                }
+                x.back();
+            } else if (c == '[') {
+                token = x.nextToken();
+                if ("CDATA".equals(token)) {
+                    if (x.next() == '[') {
+                        string = x.nextCDATA();
+                        if (string.length() > 0) {
+                            context.accumulate(config.getcDataTagName(), string);
+                        }
+                    }
+                }
+                throw x.syntaxError("Expected 'CDATA['");
+            }
+            i = 1;
+            do {
+                token = x.nextMeta();
+                if (token == null) {
+                    throw x.syntaxError("Missing '>' after '<!'.");
+                } else if (token == LT) {
+                    i += 1;
+                } else if (token == GT) {
+                    i -= 1;
+                }
+            } while (i > 0);
+        } else if (token == QUEST) {
+
+            // <?
+            x.skipPast("?>");
+            x.skipPast("<");
+            token=x.nextToken();
+        }
+
+
+        if(!token.equals(key)){ //pointer starting index is not correct
+
+            return null;
+        }
+
+        /** skip tokens until it equals to the last key in the pointer listIterator **/
+
+        while (pointer.hasNext()) {
+            key=pointer.next();
+
+            /** if number found in pointer listIterator, skip token til it reaches the specified array index -1 **/
+            if(key.matches("[0-9]+")) {
+
+                pointer.previous();
+                last_key=pointer.previous();
+                int count=0;
+                if(Integer.parseInt(key)>0){
+                    while (count < Integer.parseInt(key)) {
+                        x.skipPast("<");
+                        token = x.nextToken();
+                        if (token instanceof String && token.equals(last_key)) {
+                            count++;
+                        }
+                    }
+                }
+                pointer.next();
+                pointer.next();
+                key=last_key;
+            }
+
+            /** key in the pointerIterator != number **/
+            else{
+
+                while (!(token instanceof String) || !((String) token).equals(key)) {
+                    x.skipPast("<");
+                    token = x.nextToken();
+                }
+            }
+        }
+
+    /** start parsing the last index of pointer **/
+
+        try{
+            while(x.more()) {
+                parse2(x, context, key, key, XMLParserConfiguration.ORIGINAL);
+                x.skipPast("<");
+            }
+        }
+        catch (CloseTagFoundException e){
+
+        }
+        return context;
+
+    }
+
+/***************************************************  END OF NEW PARSE METHODS  *****************************************************************************/
+
+
+
 
     /**
      * Scan the content following the named tag, attaching it to the context.
@@ -708,6 +1103,107 @@ public class XML {
     public static JSONObject toJSONObject(String string, XMLParserConfiguration config) throws JSONException {
         return toJSONObject(new StringReader(string), config);
     }
+
+
+
+
+/****************************************************NEW toJSONObject METHODS BEGINS***********************************************************/
+
+
+    /**
+     * Convert a well-formed (but not necessarily valid) XML string into a
+     * JSONObject. Some information may be lost in this transformation because
+     * JSON is a data format and XML is a document format. XML uses elements,
+     * attributes, and content text, while JSON uses unordered collections of
+     * name/value pairs and arrays of values. JSON does not does not like to
+     * distinguish between elements and attributes. Sequences of similar
+     * elements are represented as JSONArrays. Content text may be placed in a
+     * "content" member. Comments, prologs, DTDs, and <pre>{@code
+     * &lt;[ [ ]]>}</pre>
+     * are ignored.
+     *
+     * All values are converted as strings, for 1, 01, 29.0 will not be coerced to
+     * numbers but will instead be the exact value as seen in the XML document.
+     *
+     * @param reader
+     *            The source Reader.
+     * @param path
+     *            The JSONPointer.
+     * @return A JSONObject containing a sub-object of the XML file.
+     * @throws JSONException Thrown if there is an errors while parsing the string
+     */
+    public static JSONObject toJSONObject(Reader reader, JSONPointer path) {
+
+
+        JSONObject jo = new JSONObject();
+        XMLTokener x = new XMLTokener(reader);
+        if(path.toString().length()==0) {
+            return toJSONObject(reader);
+        }
+
+        List<String> indexes= Arrays.asList(path.toString().split("/"));
+        indexes=indexes.subList(1,indexes.size());
+
+        ListIterator<String> i= indexes.listIterator();
+
+        x.skipPast("<");
+        return parse1(x,jo, null, i, XMLParserConfiguration.ORIGINAL );
+    }
+
+
+
+    /**
+     * Convert a well-formed (but not necessarily valid) XML string into a
+     * JSONObject. Some information may be lost in this transformation because
+     * JSON is a data format and XML is a document format. XML uses elements,
+     * attributes, and content text, while JSON uses unordered collections of
+     * name/value pairs and arrays of values. JSON does not does not like to
+     * distinguish between elements and attributes. Sequences of similar
+     * elements are represented as JSONArrays. Content text may be placed in a
+     * "content" member. Comments, prologs, DTDs, and <pre>{@code
+     * &lt;[ [ ]]>}</pre>
+     * are ignored.
+     *
+     * All values are converted as strings, for 1, 01, 29.0 will not be coerced to
+     * numbers but will instead be the exact value as seen in the XML document.
+     *
+     * @param reader
+     *            The source Reader.
+     * @param path
+     *            A JsonPointer.
+     * @param replacement
+     *             A JSONObject.
+     * @return A replaced JSONObject extracted from the XML file.
+     * @throws JSONException Thrown if there is an errors while parsing the string
+     */
+    public static JSONObject toJSONObject(Reader reader, JSONPointer path, JSONObject replacement) {
+
+        JSONObject jo = new JSONObject();
+        XMLTokener x = new XMLTokener(reader);
+        if (path.toString().length() == 0) {
+            return toJSONObject(reader);
+        }
+
+        List<String> indexes = Arrays.asList(path.toString().split("/"));
+        indexes = indexes.subList(1, indexes.size());
+
+        ListIterator<String> i = indexes.listIterator();
+
+        x.skipPast("<");
+        JSONObject subObj = parse1(x, jo, null, i, XMLParserConfiguration.ORIGINAL);
+        replacement.clear();
+        replacement = subObj;
+        return replacement;
+    }
+
+
+
+/****************************************************NEW toJSONObject METHODS END***********************************************************/
+
+
+
+
+
 
     /**
      * Convert a JSONObject into a well-formed, element-normal XML string.

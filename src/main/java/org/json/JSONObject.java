@@ -1,6 +1,6 @@
 package org.json;
 
-import java.io.Closeable;
+import java.io.*;
 
 /*
  Copyright (c) 2002 JSON.org
@@ -26,9 +26,6 @@ import java.io.Closeable;
  SOFTWARE.
  */
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -183,6 +180,8 @@ public class JSONObject {
         // Therefore, an implementation mustn't rely on the order of the item.
         this.map = new HashMap<String, Object>();
     }
+
+
 
     /**
      * Construct a JSONObject from a subset of another JSONObject. An array of
@@ -2299,6 +2298,7 @@ public class JSONObject {
         }
         return ja;
     }
+
 
     /**
      * Make a JSON text of this JSONObject. For compactness, no whitespace is

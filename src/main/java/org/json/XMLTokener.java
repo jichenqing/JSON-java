@@ -276,7 +276,7 @@ public class XMLTokener extends JSONTokener {
         case 0:
             throw syntaxError("Misshaped element");
         case '<':
-            throw syntaxError("Misplaced '<'");
+//            throw syntaxError("Misplaced '<'");
         case '>':
             return XML.GT;
         case '/':
