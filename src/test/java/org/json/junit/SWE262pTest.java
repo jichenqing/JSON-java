@@ -182,7 +182,7 @@ public class SWE262pTest {
         //WHEN
         assertFalse(replacement.isEmpty());
         JSONObject test= XML.toJSONObject(fileReader,jsonPointer,replacement);
-        System.out.println(test);
+//        System.out.println(test);
 
         //THEN
         JSONArray arr=(JSONArray) test.get("namespace");
