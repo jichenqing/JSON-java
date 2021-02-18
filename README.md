@@ -1,4 +1,18 @@
 
+# swe262p-milestone4
+
+Add streaming methods to the library that allow the client code to chain operations without having to load the entire file in memory. For example:
+
+## XML File Access:
+https://drive.google.com/drive/folders/1LAK662tWXdfgcXJL8UJxIFjB2Jwumi4T?usp=sharing
+download and add the xml files into the main directory of this repo.
+
+## Unit tests
+
+The unit tests are in the Milestone4.java under json\src\test\java\org\json\junit.
+The test cases all use the "books.xml" as the implemented object.
+
+
 # swe262p-milestone3
 
 this milestone project overloads the toJSONObject method in XML.java to transform the keys with a Function while parsing the XML file into a jsonObject.
@@ -9,7 +23,7 @@ This toJSONObject will boost the performance comparing to the key transformer fu
 https://drive.google.com/drive/folders/1LAK662tWXdfgcXJL8UJxIFjB2Jwumi4T?usp=sharing
 
 ## Unit tests
-  the unit tests are written in the Milestne3Test.java, under \src\test\java\org\json\junit.
+  the unit tests are written in the Milestone3Test.java, under json\src\test\java\org\json\junit.
   The test cases all use the "books.xml" as the xml file to be transformed.
   To make the tests run as expected, place the "books.xml", which can be found in https://drive.google.com/drive/folders/1LAK662tWXdfgcXJL8UJxIFjB2Jwumi4T?usp=sharing to the JSON-java directory.
 
