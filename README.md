@@ -9,7 +9,7 @@ download and add the xml files into the main directory of this repo.
 
 ## Unit tests
 
-The unit tests are in the Milestone4.java under json\src\test\java\org\json\junit.
+The unit tests are in the Milestone4Test.java under json\src\test\java\org\json\junit.
 The test cases all use the "books.xml" as the implemented object.
 
 
