@@ -33,16 +33,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.ResourceBundle;
-import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * A JSONObject is an unordered collection of name/value pairs. Its external
@@ -98,6 +94,72 @@ import java.util.regex.Pattern;
  * @version 2016-08-15
  */
 public class JSONObject {
+
+
+
+    /****************************** MILESTONE4 TOJSONSTREAM METHOD **************************/
+
+    Stream.Builder<Object> builder = Stream.builder();
+
+    public void toStream(Object object, String key) {
+        if(object instanceof JSONObject) {
+            for (Entry<String,Object> e : ((JSONObject) object).entrySet()){
+                if(e.getValue() instanceof JSONObject || e.getValue() instanceof JSONArray){
+                    toStream(e.getValue(),key+"/"+e.getKey());
+                }
+
+                else{
+                    HashMap<String,Object>map = new HashMap<>();
+                    map.put(key+"/"+e.getKey(),e.getValue());
+                    builder.add(map);
+                }
+            }
+        }
+        else{
+            JSONArray jsonArray = (JSONArray)object;
+            int size = jsonArray.toList().size();
+
+            for(int i=0;i<size;i++){
+                Object o = jsonArray.get(i);
+                if( o instanceof JSONArray ||o instanceof JSONObject){
+                    toStream(o,key+"/"+i);
+                }
+                else{
+                    HashMap<String,Object>map = new HashMap<>();
+                    map.put(key+"/"+i,o);
+                    builder.add(map);
+                }
+            }
+        }
+    }
+
+
+    public Stream<Object> toStream() {
+
+        for (Entry<String,Object> entry  : this.map.entrySet()) {
+            try {
+                if (NULL.equals(entry)) {
+                    builder.add(null);
+                }
+                if (entry.getValue() instanceof JSONObject || entry.getValue() instanceof JSONArray){
+                    toStream(entry.getValue(), "/"+entry.getKey());
+                }
+                else{
+                    builder.add(entry);
+                }
+
+            } catch (Exception exception) {
+                return null;
+            }
+        }
+        return builder.build();
+    }
+
+
+
+
+
+
     /**
      * JSONObject.NULL is equivalent to the value that JavaScript calls null,
      * whilst Java's null is equivalent to the value that JavaScript calls
@@ -1626,8 +1688,6 @@ public class JSONObject {
      * implementations and interfaces has the annotation. Returns the depth of the
      * annotation in the hierarchy.
      *
-     * @param <A>
-     *            type of the annotation
      *
      * @param m
      *            method to check
@@ -2645,4 +2705,5 @@ public class JSONObject {
                 "JSONObject[" + quote(key) + "] is not a " + valueType + " (" + value + ")."
                 , cause);
     }
+
 }

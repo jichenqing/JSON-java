@@ -24,7 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
@@ -1434,9 +1433,6 @@ public class XML {
 
 
 /******************************* Milestone3 toJSONObject METHOD END***********************************************************/
-
-
-
 
 
 
