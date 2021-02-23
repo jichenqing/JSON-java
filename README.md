@@ -1,12 +1,24 @@
 
 # swe262p-milestone4
 
-Add streaming methods to JSONObject.java that allows the client code to chain operations on JSON nodes. The advantage of using this stream method is that the user can query objects that contains certain word in the object's JsonPointer/node path, instead of specfiying the absolute JsonPointer. For example,
+Add streaming methods to JSONObject.java that allows the client code to chain operations on JSON nodes. The advantages of using this stream method are that 
+- the user can query objects that contains certain words in the object's JsonPointer/node path, instead of specfiying the absolute JsonPointer
+- the user can get the values of a certain attribute in a JsonArray all at once by using filter() without having to iterate ober the JSONArray.
+For example,
 ```
 fileReader=new FileReader("books.xml");
 JSONObject jsonObject= XML.toJSONObject(fileReader);
 List<Object> test_titles = jsonObject.toStream()
+        .filter(node->((HashMap) node).keySet().iterator().next().toString().contains("/catalog/book"))
         .filter(node->((HashMap) node).keySet().iterator().next().toString().contains("/title"))
+         .map(node-> new ArrayList<Object>(((HashMap)node).values()).get(0)
+        ).collect(Collectors.toList());
+VS
+List<Object> expected_titles = new ArrayList<>();
+        JSONArray books = (JSONArray) (expected.optQuery("/catalog/book"));
+        for(Object book:books.toList()){
+            expected_titles.add(((HashMap)book).get("title"));
+        }
  ```
 
 Stream.Builder<Object> builder is a global variable declared in the jsonObject.java. Each item is a Map<String, Object>.
