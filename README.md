@@ -3,7 +3,7 @@
 
 Add streaming methods to JSONObject.java that allows the client code to chain operations on JSON nodes. The advantages of using this stream method are that 
 - the user can query objects that contains certain words in the object's JsonPointer/node path, instead of specfiying the absolute JsonPointer
-- the user can get the values of a certain attribute in a JsonArray all at once by using filter() without having to iterate ober the JSONArray.
+- the user can get the values of a certain attribute in a JsonArray all at once by using filter() without having to iterate over the JSONArray.
 For example,
 ```
 fileReader=new FileReader("books.xml");
