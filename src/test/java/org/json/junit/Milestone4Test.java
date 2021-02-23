@@ -24,14 +24,12 @@ public class Milestone4Test {
        String expected_value = (String)expected.query("/clinical_study/sponsors/collaborator/1/agency");
        fileReader.close();
 
-       fileReader=new FileReader("src/test/resources/Issue537.xml");
        List<String> test_value = new ArrayList<>();
        expected.toStream().forEach(node->{
            if(((HashMap) node).get("/clinical_study/sponsors/collaborator/1/agency")!=null){
                 test_value.add((String) new ArrayList<Object>(((HashMap)node).values()).get(0));
            }
        });
-       fileReader.close();
        if(test_value.size()==0) assertEquals(expected_value,test_value.get(0));
    }
 
@@ -47,13 +45,11 @@ public class Milestone4Test {
         }
         fileReader.close();
 
-        fileReader=new FileReader("books.xml");
         List<Object> test_titles = expected.toStream()
                 .filter(node->((HashMap) node).keySet().iterator().next().toString().contains("/catalog/book"))
                 .filter(node->((HashMap) node).keySet().iterator().next().toString().contains("/title"))
                 .map(node-> new ArrayList<Object>(((HashMap)node).values()).get(0)
         ).collect(Collectors.toList());
-        fileReader.close();
 
         assertEquals(expected_titles.toString(),test_titles.toString());
     }
@@ -67,11 +63,9 @@ public class Milestone4Test {
         int expected_count = ((JSONObject)(expected.query("/clinical_study/sponsors/collaborator/0"))).length();
         fileReader.close();
 
-        fileReader=new FileReader("src/test/resources/Issue537.xml");
         int test_count = (int)expected.toStream()
         .filter(node->((HashMap) node).keySet().iterator().next().toString().contains("/clinical_study/sponsors/collaborator/0"))
         .count();
-        fileReader.close();
 
         assertEquals(expected_count,test_count);
     }
