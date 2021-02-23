@@ -31,6 +31,9 @@ public class Milestone4Test {
            }
        });
        if(test_value.size()==0) assertEquals(expected_value,test_value.get(0));
+       else{
+           assert false;
+       }
    }
 
     @Test
