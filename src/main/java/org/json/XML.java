@@ -24,6 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+import javax.security.auth.callback.Callback;
+import java.io.FileReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
@@ -32,7 +34,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 
 /**
@@ -1432,7 +1439,28 @@ public class XML {
 
 
 
-/******************************* Milestone3 toJSONObject METHOD END***********************************************************/
+/******************************* Milestone5 toJSONObject METHOD BEGIN***********************************************************/
+
+
+public static Future<JSONObject> toJsonObject_future(FileReader fileReader){
+
+    return Executors.newSingleThreadExecutor().submit(() -> {
+        Thread.sleep(500);
+        return toJSONObject(fileReader);
+
+    });
+
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
