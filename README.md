@@ -1,3 +1,10 @@
+# swe262p-milestone5
+
+add concurrency method toJsonObject_future(FileReader) to XML.java that allows the user to proceed other tasks while converting xml file to jsonobject at the same time.
+
+The test cases for this new method are created in Milestone5Test.java under json\src\test\java\org\json\junit.
+The xml file that is used for test purpose is the original Issue537.xml located in src/test/resources.
+
 
 # swe262p-milestone4
 
