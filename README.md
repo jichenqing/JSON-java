@@ -1,16 +1,40 @@
 
 # swe262p-milestone4
 
-Add streaming methods to the library that allow the client code to chain operations without having to load the entire file in memory. For example:
+Add streaming methods to JSONObject.java that allows the client code to chain operations on JSON nodes. The advantages of using this stream method are that 
+- the user can query objects that contains certain words in the object's JsonPointer/node path, instead of specfiying the absolute JsonPointer
+- the user can get the values of a certain attribute in a JsonArray all at once by using filter() without having to iterate over the JSONArray.
+For example,
+```
+fileReader=new FileReader("books.xml");
+JSONObject jsonObject= XML.toJSONObject(fileReader);
+List<Object> test_titles = jsonObject.toStream()
+        .filter(node->((HashMap) node).keySet().iterator().next().toString().contains("/catalog/book"))
+        .filter(node->((HashMap) node).keySet().iterator().next().toString().contains("/title"))
+         .map(node-> new ArrayList<Object>(((HashMap)node).values()).get(0)
+        ).collect(Collectors.toList());
+VS
+List<Object> expected_titles = new ArrayList<>();
+        JSONArray books = (JSONArray) (expected.optQuery("/catalog/book"));
+        for(Object book:books.toList()){
+            expected_titles.add(((HashMap)book).get("title"));
+        }
+ ```
+
+Stream.Builder<Object> builder is a global variable declared in the jsonObject.java. Each item is a Map<String, Object>.
+
+Two streaming methods are implemented. 
+- toStream() is called by the entire jsonObject built from the reader and returns a Stream<Object> by calling builder.build(). 
+- toStream(Object object, String key) is a recursive void method designed for the JsonObject/JsonArray, called inside the toStream(), add the maps that each contains the absolute JsonPoniter path as a key and the corresponding values other than JsonObject/JsonArray to the builder.
 
 ## XML File Access:
 https://drive.google.com/drive/folders/1LAK662tWXdfgcXJL8UJxIFjB2Jwumi4T?usp=sharing
-download and add the xml files into the main directory of this repo.
+download and add the xml files into the main directory of this repo. The file has been used for unit test is the books.xml that you could find in this google drive folder.
 
 ## Unit tests
 
 The unit tests are in the Milestone4Test.java under json\src\test\java\org\json\junit.
-The test cases all use the "books.xml" as the implemented object.
+
 
 
 # swe262p-milestone3
